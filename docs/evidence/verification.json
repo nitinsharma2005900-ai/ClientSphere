@@ -1,0 +1,78 @@
+{
+  "verified_at": "2026-11-27T00:40:13.274765+05:30",
+  "application_commit": "0f4f95f58ca5caeddd290cee82be964f5f2fcf69",
+  "backend_tests": {
+    "passed": 41,
+    "failed": 0
+  },
+  "frontend_component_tests": {
+    "passed": 3,
+    "failed": 0
+  },
+  "python_tests": {
+    "passed": 15,
+    "failed": 0
+  },
+  "browser_tests": {
+    "startTime": "2026-11-26T19:08:40.752Z",
+    "duration": 53005.225,
+    "expected": 6,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "smoke": {
+    "checks": {
+      "/health": 200,
+      "/ready": 200,
+      "/users": 200,
+      "/leads": 200,
+      "/contacts": 200,
+      "/companies": 200,
+      "/opportunities": 200,
+      "/pipelines": 200,
+      "/tasks": 200,
+      "/activities": 200,
+      "/workflows": 200,
+      "/workflows/executions": 200,
+      "/imports/jobs": 200,
+      "/integrations/status": 200,
+      "/analytics/dashboard": 200,
+      "/analytics/forecast": 200,
+      "/audit-logs": 200,
+      "/docs/": 200,
+      "calendarSandbox": 200,
+      "telephonyMock": 200
+    },
+    "automation": "COMPLETED",
+    "benchmark": {
+      "status": "PASSED",
+      "benchmarkTarget": "Lead Scoring & Deduplication Throughput",
+      "sampleSize": 500,
+      "elapsedSeconds": 0.1284,
+      "throughputPerSecond": 3895.04,
+      "boundedScores": true,
+      "averageLatencyMs": 0.257
+    }
+  },
+  "secret_scan": "Gitleaks: no leaks found in tracked Git history",
+  "npm_audit": "0 vulnerabilities (all dependencies)",
+  "railway": {
+    "project_url": "https://railway.com/project/ce2949fd-814f-46ee-96c4-aee38dd9b090",
+    "live_url": null,
+    "services_provisioned": 0,
+    "status": "blocked",
+    "error": "Free plan resource provision limit exceeded. Please upgrade to provision more resources!"
+  },
+  "github_ci": {
+    "commit": "0f4f95f",
+    "checks": {
+      "status": "success",
+      "url": "https://github.com/nitinsharma2005900-ai/ClientSphere/actions/runs/45881164059"
+    },
+    "security": {
+      "status": "success",
+      "url": "https://github.com/nitinsharma2005900-ai/ClientSphere/actions/runs/45881164269"
+    }
+  }
+}

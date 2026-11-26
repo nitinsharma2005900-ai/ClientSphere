@@ -7,8 +7,8 @@ Existing premium CRM interface, Express business API, PostgreSQL persistence, Py
 - GitHub: https://github.com/nitinsharma2005900-ai/ClientSphere (private repository).
 - Railway project: https://railway.com/project/ce2949fd-814f-46ee-96c4-aee38dd9b090
 - Railway live URL: **Unavailable. Deployment blocked by the account free-plan resource provision limit.** No application service was provisioned; no public application was verified.
-- Local UI: http://localhost:3000
-- Local API / Swagger: http://localhost:4000/api/v1/docs
+- Verified running Docker UI in this workspace: http://127.0.0.1:3046 (standard Compose defaults to port 3000).
+- Verified Docker API / Swagger: http://127.0.0.1:4046/api/v1/docs/; frontend proxy: http://127.0.0.1:3046/api/v1/docs/.
 
 The project brief is `project6.pdf`; its assessment criteria are treated as requirements to verify. The earlier claim of an awarded 15/15 score has been removed. Assessment 14 requires a verified cloud deployment and remains blocked. See [the assessment matrix](docs/ASSESSMENTS_CHECKLIST.md) and [actual verification evidence](docs/VERIFICATION_RESULTS.md).
 
@@ -56,6 +56,10 @@ All five accounts use **Password123!**. These are intentionally public demonstra
 | Support | support@clientsphere.io |
 
 Sign-in is explicit. A failed or expired session never silently signs in as administrator. The existing sidebar role selector demonstrates the seeded accounts. Representatives see owned/shared sales records; read-only collaboration is enforced. Support and marketing have restricted writes. Tenant checks cover resource IDs and referenced records. Manager access is required for workflows, pipelines, and audit history.
+
+## Verified results
+
+65 automated tests passed: 41 backend, 3 React component, 15 Python and 6 browser journeys. All 20 container smoke checks returned HTTP 200, an actual queued workflow completed, and all six services are healthy. Production builds, npm audit (0 vulnerabilities) and Gitleaks passed. [GitHub CI](https://github.com/nitinsharma2005900-ai/ClientSphere/actions/runs/45881164059) and [security checks](https://github.com/nitinsharma2005900-ai/ClientSphere/actions/runs/45881164269) passed for the final application code. See the evidence report for CI URLs and remaining assessment requirements.
 
 ## Tests and builds
 
