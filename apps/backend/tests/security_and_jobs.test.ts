@@ -52,6 +52,16 @@ describe('Production security, persistence and worker checks', () => {
     expect((await api('get', '/leads?status=invalid')).status).toBe(422);
   });
   it('rejects invalid dates with a validation error', async () => expect((await api('post', '/tasks').send({ title: 'Invalid date', dueDate: 'nonsense' })).status).toBe(422));
+  it('reads individual tasks and updates activity status with validated fields', async () => {
+    const task = await api('post', '/tasks').send({ title: 'Task profile verification' });
+    expect((await api('get', `/tasks/${task.body.data.id}`)).status).toBe(200);
+    const activity = await api('post', '/activities').send({ subject: 'Activity edit verification', status: 'PLANNED' });
+    const update = await api('put', `/activities/${activity.body.data.id}`).send({ subject: 'Updated activity', status: 'COMPLETED' });
+    expect(update.status).toBe(200);
+    expect(update.body.data.completedAt).toBeTruthy();
+    expect((await api('get', `/activities/${activity.body.data.id}`)).body.data.subject).toBe('Updated activity');
+    expect((await api('put', `/activities/${activity.body.data.id}`).send({ dueDate: 'invalid' })).status).toBe(422);
+  });
   it('rejects a stage from another pipeline', async () => {
     const other = await db.pipeline.create({ data: { name: 'Other pipeline', organizationId: admin.organizationId, stages: { create: { name: 'Other', order: 0 } } }, include: { stages: true } });
     expect((await api('post', '/opportunities').send({ title: 'Wrong stage', value: 100, pipelineId: pipeline.id, stageId: other.stages[0].id })).status).toBe(422);

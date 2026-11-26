@@ -125,11 +125,18 @@ router.delete('/pipelines/:id', RecordsController.deletePipeline);
 
 // Activities & Timeline
 router.get('/activities', ActivityController.list);
+router.get('/activities/:id', logAudit('READ', 'ACTIVITY', true), async (req, res, next) => {
+  try { res.json({ success: true, data: await db.activity.findUnique({ where: { id: req.params.id } }) }); } catch (error) { next(error); }
+});
 router.post('/activities', ActivityController.create);
+router.put('/activities/:id', logAudit('UPDATE', 'ACTIVITY'), RecordsController.updateActivity);
 router.delete('/activities/:id', ActivityController.delete);
 
 // Tasks
 router.get('/tasks', TaskController.list);
+router.get('/tasks/:id', async (req, res, next) => {
+  try { res.json({ success: true, data: await db.task.findUnique({ where: { id: req.params.id } }) }); } catch (error) { next(error); }
+});
 router.post('/tasks', TaskController.create);
 router.put('/tasks/:id', TaskController.update);
 router.delete('/tasks/:id', TaskController.delete);

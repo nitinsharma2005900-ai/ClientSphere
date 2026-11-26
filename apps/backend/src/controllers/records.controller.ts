@@ -4,6 +4,14 @@ import { db } from '../db/client';
 import { ValidationError, ForbiddenError } from '../utils/errors';
 
 export class RecordsController {
+  static async updateActivity(req: Request, res: Response, next: NextFunction) {
+    try {
+      const parsed = z.object({ subject: z.string().trim().min(1).optional(), description: z.string().optional(), status: z.enum(['PLANNED', 'COMPLETED', 'CANCELLED']).optional(), dueDate: z.string().refine(value => Number.isFinite(Date.parse(value))).optional() }).safeParse(req.body);
+      if (!parsed.success) throw new ValidationError('Invalid activity update');
+      const data = { ...parsed.data, dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : undefined, completedAt: parsed.data.status ? (parsed.data.status === 'COMPLETED' ? new Date() : null) : undefined };
+      res.json({ success: true, data: await db.activity.update({ where: { id: req.params.id }, data }) });
+    } catch (error) { next(error); }
+  }
   static async updateOpportunity(req: Request, res: Response, next: NextFunction) {
     try {
       const schema = z.object({ title: z.string().trim().min(1).optional(), value: z.number().finite().min(0).optional(), currency: z.string().length(3).optional(), expectedCloseDate: z.string().refine(value => Number.isFinite(Date.parse(value))).optional(), probability: z.number().min(0).max(1).optional() });
