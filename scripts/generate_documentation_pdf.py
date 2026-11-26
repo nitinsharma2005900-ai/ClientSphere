@@ -25,6 +25,7 @@ def inline(text):
     text = re.sub(r'`([^`]+)`', r'<font name="Courier">\1</font>', text)
     text = re.sub(r'\[([^]]+)\]\((https?://[^)]+)\)', r'<link href="\2" color="#7C3AED">\1</link>', text)
     text = re.sub(r'\[([^]]+)\]\([^)]+\)', r'\1', text)
+    text = re.sub(r'(?<![="\'>])(https?://[^\s<)]+)', r'<link href="\1" color="#7C3AED">\1</link>', text)
     return text
 
 
