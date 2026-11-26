@@ -24,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <title>ClientSphere – Enterprise CRM, Sales Pipeline & Workflow Automation</title>
         <meta
           name="description"
