@@ -34,10 +34,30 @@
   },
   "rewrites": [
     {
+      "source": "/api/v1/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
       "source": "/(.*)",
       "destination": {
         "service": "frontend"
       }
     }
-  ]
+  ],
+  "daemons": {
+    "automation": {
+      "root": ".",
+      "entrypoint": "docker/Dockerfile.vercel-worker",
+      "instances": {
+        "iad1": 1
+      },
+      "resources": {
+        "requests": {
+          "memory": "1Gi"
+        }
+      }
+    }
+  }
 }

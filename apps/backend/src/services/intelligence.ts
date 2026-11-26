@@ -4,7 +4,7 @@ import { AppError } from '../utils/errors';
 export async function intelligence(path: string, payload: unknown) {
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const response = await fetch(`${config.pythonServiceUrl}/api/v1${path}`, {
+      const response = await fetch(new URL(`api/v1${path}`, config.pythonServiceUrl.replace(/\/?$/, '/')), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload), signal: AbortSignal.timeout(10000),
       });

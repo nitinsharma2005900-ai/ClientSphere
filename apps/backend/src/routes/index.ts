@@ -23,6 +23,8 @@ import { AuditController } from '../controllers/audit.controller';
 import { enforcePolicy } from '../middlewares/policy.middleware';
 import { RecordsController } from '../controllers/records.controller';
 import { db } from '../db/client';
+import { config } from '../config';
+import IORedis from 'ioredis';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const router = Router();
@@ -47,6 +49,19 @@ router.get('/ready', async (req: Request, res: Response) => {
   } catch (err: any) {
     res.status(503).json({ status: 'unready', error: 'Database is unavailable' });
   }
+});
+
+// Read-only component diagnostics; never return credentials or customer data.
+router.get('/cloud-health', async (req, res) => {
+  const result = { database: false, python: false, redis: false, worker: false };
+  const redis = new IORedis(config.redisUrl, { lazyConnect: true, connectTimeout: 4000, commandTimeout: 4000, maxRetriesPerRequest: 0, retryStrategy: () => null });
+  redis.on('error', () => {});
+  await Promise.all([
+    (async () => { try { await db.$queryRaw`SELECT 1`; result.database = true; } catch {} })(),
+    (async () => { try { const response = await fetch(new URL('health', config.pythonServiceUrl.replace(/\/?$/, '/')), { signal: AbortSignal.timeout(5000) }); result.python = response.ok && (await response.json()).status === 'healthy'; } catch {} })(),
+    (async () => { try { await redis.connect(); result.redis = await redis.ping() === 'PONG'; result.worker = Boolean(await redis.get('clientsphere:worker:heartbeat')); } catch {} finally { redis.disconnect(); } })(),
+  ]);
+  res.status(Object.values(result).every(Boolean) ? 200 : 503).json(result);
 });
 
 // ==========================================

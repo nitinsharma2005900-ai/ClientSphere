@@ -1,0 +1,24 @@
+FROM node:22-bookworm-slim AS build
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY package.json package-lock.json ./
+COPY apps/backend/package.json apps/backend/package.json
+COPY apps/frontend/package.json apps/frontend/package.json
+COPY apps/worker/package.json apps/worker/package.json
+COPY packages/shared-types/package.json packages/shared-types/package.json
+RUN npm ci --workspace=apps/backend --workspace=packages/shared-types --no-audit --no-fund
+COPY packages/shared-types packages/shared-types
+COPY apps/backend apps/backend
+COPY docs docs
+RUN npm run build -w packages/shared-types && npm run db:generate && npm run build -w apps/backend
+RUN npm prune --omit=dev --workspace=apps/backend --workspace=packages/shared-types
+
+FROM node:22-bookworm-slim
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates curl dumb-init && rm -rf /var/lib/apt/lists/*
+COPY --from=build --chown=node:node /app /app
+ENV NODE_ENV=production PORT=4001 WORKER_POLL_MS=15000
+USER node
+EXPOSE 4000
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+CMD ["node", "apps/backend/dist/worker.js"]
