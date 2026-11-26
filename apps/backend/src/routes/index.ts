@@ -58,7 +58,7 @@ router.get('/cloud-health', async (req, res) => {
   redis.on('error', () => {});
   await Promise.all([
     (async () => { try { await db.$queryRaw`SELECT 1`; result.database = true; } catch {} })(),
-    (async () => { try { const response = await fetch(new URL('health', config.pythonServiceUrl.replace(/\/?$/, '/')), { signal: AbortSignal.timeout(5000) }); result.python = response.ok && (await response.json()).status === 'healthy'; } catch {} })(),
+    (async () => { try { const response = await fetch(new URL('health', config.pythonServiceUrl.replace(/\/?$/, '/')), { signal: AbortSignal.timeout(5000) }); result.python = response.ok && ((await response.json()) as { status?: string }).status === 'healthy'; } catch {} })(),
     (async () => { try { await redis.connect(); result.redis = await redis.ping() === 'PONG'; result.worker = Boolean(await redis.get('clientsphere:worker:heartbeat')); } catch {} finally { redis.disconnect(); } })(),
   ]);
   res.status(Object.values(result).every(Boolean) ? 200 : 503).json(result);
