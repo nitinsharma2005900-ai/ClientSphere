@@ -1,94 +1,21 @@
-# ClientSphere – Architecture & Engineering Design Document
+# ClientSphere architecture
 
-**Platform:** Enterprise CRM, Sales Pipeline & Workflow Automation Platform  
-**Developer:** Nitin Sharma  
-**Version:** 1.0.0 (Production & Assessment Ready)
+The premium Next.js interface remains the presentation layer. TanStack Query stores client data and is cleared whenever accounts change. Browser requests use a same-origin proxy; `BACKEND_INTERNAL_URL` is read only by the Next.js server at runtime.
 
----
+Express owns business authorization and every PostgreSQL CRM entity. Prisma migrations create the relational schema; no alternative file store exists. Organization IDs come from authenticated tokens, while a central policy validates resource IDs and referenced records before controllers run. Representative ownership and team `canEdit` rules are enforced on writes. Managers and administrators see organization-wide data; the implementation has no separate per-department team hierarchy.
 
-## 1. High-Level Modular Architecture
+FastAPI owns no authoritative CRM data. It accepts bounded processing inputs, normalizes and scores leads, identifies duplicate candidates, and calculates forecasts/velocity. Core calculations use Python's standard library and Pydantic; pandas/numpy are unnecessary for this bounded workload. Express calls it with timeouts and one retry, returning a safe 503 when unavailable.
 
-ClientSphere is engineered as a decoupled, micro-modular enterprise CRM system composed of four specialized execution layers:
+Workflow executions form a PostgreSQL outbox. The separate worker process polls queued rows, dispatches BullMQ jobs through Redis, and commits actions together with completion under a row lock. Three attempts use exponential backoff. Failed executions remain in both the execution history and Redis failed-job set, and managers can explicitly request a retry. Sandbox activities are database writes; no external network delivery is implied. Workflow-generated field updates do not recursively emit business triggers.
 
-```mermaid
-flowchart TD
-    subgraph ClientLayer ["1. Presentation Layer (apps/frontend)"]
-        UI["Next.js App Router (React 18/19, TypeScript)"]
-        State["TanStack Query (Client Cache & Hydration)"]
-        Motion["Framer Motion & Micro-interactions"]
-        Tailwind["Tailwind CSS (Ivory, Deep Navy, Violet, Emerald)"]
-    end
+PostgreSQL is the sole persistent business store. Redis stores job delivery state and a worker heartbeat. Docker uses persistent volumes; backups require a separately configured backup system and verified restore, described in the deployment runbook. Railway cloud services have not been provisioned because account capacity is exhausted.
 
-    subgraph ApiGateway ["2. Core Business Engine (apps/backend)"]
-        Express["Express.js REST Gateway (Port 4000)"]
-        AuthMid["JWT Auth & Role-Based Access Control (RBAC)"]
-        TenantMid["Multi-Tenant Isolation Scoping"]
-        AuditMid["Enterprise Audit Logging & Sensitive Masking"]
-        WorkflowEng["Workflow Automation Rule Engine"]
-    end
+The backend is a modular monolith with a separate processing service and worker. Reusing its business engine in the worker avoids implementing authorization/action rules twice. The shared-types workspace is compiled before the API, and production imports resolve to its compiled package.
 
-    subgraph IntelligenceLayer ["3. Python Intelligence Service (apps/python_service)"]
-        FastAPI["FastAPI Analytics Engine (Port 8000)"]
-        Dedupe["Deduplication & Levenshtein Normalizer"]
-        Scorer["Explainable Lead Scoring Algorithm"]
-        Velocity["Sales Velocity & Waterfall Forecaster"]
-    end
+## Concurrency decisions
 
-    subgraph AsyncWorkerLayer ["4. Background Execution Layer (apps/worker)"]
-        BullMQ["BullMQ Worker (Queue Broker)"]
-        Retries["Exponential Backoff & Dead Letter Queue (DLQ)"]
-        LoopShield["Infinite Recursion & Loop Shielding"]
-    end
+Lead conversion and commission allocation lock the relevant lead/opportunity row. Conversion commits contacts, associations, deal team, lead status and activity in one transaction. Financial checks and tenant/email uniqueness also exist in SQL. Workflow action transactions roll back all internal side effects on failure; stable execution IDs prevent duplicate effects across retries. CSV uniqueness is ultimately enforced by PostgreSQL, including competing imports.
 
-    subgraph PersistenceLayer ["5. Data Persistence Layer"]
-        Postgres[(PostgreSQL 16 - Authoritative Source of Record)]
-        PrismaORM["Prisma ORM (Typed Relational Schema)"]
-        RedisStore[(Redis 7 - Queue & Fast Cache)]
-    end
+## Operational limits
 
-    UI -->|HTTPS / REST API| Express
-    Express -->|Authenticate & Scope| TenantMid
-    TenantMid --> PrismaORM
-    PrismaORM --> Postgres
-    Express -->|Proxy Analytics & Batch CSV| FastAPI
-    Express -->|Dispatch Background Jobs| RedisStore
-    RedisStore --> BullMQ
-    BullMQ --> Express
-```
-
----
-
-## 2. Core Service Responsibilities & Service Boundaries
-
-| Service | Primary Domain Responsibility | Ownership of Data Entities | Key Dependencies |
-| :--- | :--- | :--- | :--- |
-| **Next.js Frontend** | User experience, command palette, Kanban drag-and-drop, interactive dashboards, relationship graphs | None (pure presentation) | React, TanStack Query, Tailwind |
-| **Express Backend** | Core CRM business logic, CRUD, relational integrity, RBAC, tenant isolation, audit trails, API documentation | Leads, Contacts, Companies, Opportunities, Pipelines, Activities, Tasks, Workflows | Node.js, Prisma, Express, JWT |
-| **FastAPI Service** | High-performance computational logic: CSV data cleansing, phone/email normalization, Levenshtein fuzzy duplicate detection, sales velocity math | Statistical matrices, predictive forecasts | Python 3, Pydantic, Pandas, NumPy |
-| **BullMQ Worker** | Asynchronous task executions, delayed follow-up actions, webhook triggers, retry management | Job states, dead-letter records | Redis, BullMQ |
-| **PostgreSQL** | Authoritative relational persistence, constraints, foreign keys, transactions | All persistent CRM business entities | PostgreSQL 16 |
-| **Redis** | In-memory message queues, job queues, ephemeral rate limits | BullMQ queue jobs | Redis 7 |
-
----
-
-## 3. Capstone Architecture: Multi-Company & Multi-Rep Collaboration
-
-### Multi-Company Association Architecture
-A single contact entity can be affiliated with multiple accounts/companies (e.g. an Executive acting as CTO at an enterprise while sitting on the Advisory Board of a high-growth scale-up).
-- The `contact_companies` table functions as a rich association entity storing role-specific metadata: `jobTitle`, `department`, `isPrimary`, `startDate`.
-- Eliminates duplicate contact entries, preserves unified communication histories, and ensures relationship integrity across enterprise parent-subsidiary hierarchies.
-
-### Multi-Representative Opportunity Collaboration Architecture
-Enterprise deals involve cross-functional deal teams (e.g., Primary Account Executive, Sales Engineer / Solution Architect, Executive Sponsor).
-- Modeled through the `opportunity_members` relation.
-- Role-based permissions allow granular access (`canEdit`, `commissionShare`).
-- **Team Visibility Security:** A Sales Representative can only inspect and edit opportunities if they are either the Primary Owner (`ownerId`) OR registered in `opportunity_members`. Sales Managers and CRM Administrators retain departmental or global visibility.
-
----
-
-## 4. Security & Non-Functional Design
-
-1. **Server-Side Authorization:** Every mutation and fetch operation validates caller identity, role authorization, and tenant membership at the Express middleware layer.
-2. **Idempotency & Safe Retries:** Background automation jobs incorporate a deterministic SHA-256 idempotency key preventing duplicate executions within a 5-second sliding window.
-3. **Loop Safeguards:** Workflow automation execution chains track a recursion depth counter, unconditionally halting any chain exceeding depth 5 to eliminate infinite automation loops.
-4. **Resilient Data Fallback:** The backend incorporates an in-memory/JSON snapshot persistence fallback ensuring local developers and CI runners without active PostgreSQL daemons can immediately run and verify all 15 assessments without operational blockage.
+Authentication uses short-lived signed access JWTs and hashed, revocable refresh tokens. JWTs already issued remain valid for at most 15 minutes after logout. Rate limiting is per API process, appropriate to the single-instance demo; multiple API replicas require a shared limiter. Conversion waterfall data is a current-stage distribution; historical stage-to-stage conversion is not fabricated. No user-management UI, real email/calendar/telephony provider, advanced custom-field schema editor or observed production load test is claimed.

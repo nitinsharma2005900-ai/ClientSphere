@@ -42,24 +42,25 @@ class LeadProcessor:
 
     @classmethod
     def calculate_lead_score(cls, lead: LeadScoreRequest) -> LeadScoreResponse:
-        score = 20  # Base entry score
+        weights = {'base': 20, 'executive': 35, 'management': 20, 'company': 15, 'enterprise': 15, 'phone': 15, 'corporateEmail': 10, 'inbound': 15, **lead.weights}
+        score = weights['base']
         factors: list[ScoreFactor] = []
 
         # 1. Job Title Evaluation (Demographic)
         title = (lead.jobTitle or "").lower()
         if any(term in title for term in ["cxo", "ceo", "cto", "cfo", "cio", "vp", "president", "founder", "director", "chief", "officer"]):
-            score += 35
+            score += weights['executive']
             factors.append(ScoreFactor(
                 factor="Executive Decision Maker",
-                points=35,
+                points=weights['executive'],
                 category=FactorCategory.DEMOGRAPHIC,
                 explanation=f"Title '{lead.jobTitle}' indicates direct budget authorization authority."
             ))
         elif any(term in title for term in ["manager", "lead", "head", "architect", "supervisor"]):
-            score += 20
+            score += weights['management']
             factors.append(ScoreFactor(
                 factor="Technical Management",
-                points=20,
+                points=weights['management'],
                 category=FactorCategory.DEMOGRAPHIC,
                 explanation=f"Title '{lead.jobTitle}' indicates significant project influence."
             ))
@@ -67,19 +68,19 @@ class LeadProcessor:
         # 2. Firmographic & Company Size Evaluation
         norm_company = cls.normalize_company(lead.companyName or "")
         if norm_company:
-            score += 15
+            score += weights['company']
             factors.append(ScoreFactor(
                 factor="Identified Commercial Enterprise",
-                points=15,
+                points=weights['company'],
                 category=FactorCategory.FIRMOGRAPHIC,
                 explanation=f"Company '{lead.companyName}' is an established business organization."
             ))
 
         if lead.employeeCount and lead.employeeCount >= 500:
-            score += 15
+            score += weights['enterprise']
             factors.append(ScoreFactor(
                 factor="Enterprise Scale Company",
-                points=15,
+                points=weights['enterprise'],
                 category=FactorCategory.FIRMOGRAPHIC,
                 explanation=f"Organization scale with {lead.employeeCount}+ staff satisfies enterprise qualification."
             ))
@@ -87,10 +88,10 @@ class LeadProcessor:
         # 3. Contact & Telephony Richness (Engagement)
         norm_phone = cls.normalize_phone(lead.phone or "")
         if norm_phone and len(norm_phone) >= 10:
-            score += 15
+            score += weights['phone']
             factors.append(ScoreFactor(
                 factor="Direct Outbound Telephony Verified",
-                points=15,
+                points=weights['phone'],
                 category=FactorCategory.ENGAGEMENT,
                 explanation="Verified phone number facilitates multi-channel outbound cadence."
             ))
@@ -100,10 +101,10 @@ class LeadProcessor:
         public_domains = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "aol.com"]
         domain = email.split("@")[-1] if "@" in email else ""
         if domain and domain not in public_domains:
-            score += 10
+            score += weights['corporateEmail']
             factors.append(ScoreFactor(
                 factor="Corporate Domain Address",
-                points=10,
+                points=weights['corporateEmail'],
                 category=FactorCategory.ENGAGEMENT,
                 explanation=f"Corporate email on domain '@{domain}' confirms institutional identity."
             ))
@@ -111,10 +112,10 @@ class LeadProcessor:
         # 5. Acquisition Channel Source (Timing)
         src = (lead.source or "").upper()
         if src in ["REFERRAL", "INBOUND_FORM"]:
-            score += 15
+            score += weights['inbound']
             factors.append(ScoreFactor(
                 factor="High Intent Acquisition Source",
-                points=15,
+                points=weights['inbound'],
                 category=FactorCategory.TIMING,
                 explanation=f"Inbound acquisition via {src} exhibits superior sales acceleration."
             ))

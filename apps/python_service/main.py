@@ -156,7 +156,7 @@ def run_lead_scoring_benchmark():
         "sampleSize": 500,
         "elapsedSeconds": round(elapsed, 4),
         "throughputPerSecond": round(throughput_per_sec, 2),
-        "accuracy": 1.0,
+        "boundedScores": all(0 <= result.score <= 100 for result in synthetic_leads),
         "averageLatencyMs": round((elapsed / 500) * 1000, 3),
     }
 

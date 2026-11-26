@@ -8,6 +8,12 @@ async function login(page: Page, role = 'admin') {
   await expect(page.getByRole('heading', { name: 'Sales Intelligence Hub' })).toBeVisible();
 }
 
+test('Swagger documentation loads through the same-origin proxy without redirect loops', async ({ page }) => {
+  const response = await page.goto('/api/v1/docs/');
+  expect(response?.status()).toBe(200);
+  await expect(page.locator('.swagger-ui .info .title')).toContainText('ClientSphere');
+});
+
 test('all major pages render with successful API responses and no browser errors', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));

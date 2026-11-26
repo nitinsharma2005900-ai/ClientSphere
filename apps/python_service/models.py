@@ -5,7 +5,7 @@
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class PriorityTier(str, Enum):
@@ -26,6 +26,16 @@ class ScoreFactor(BaseModel):
     explanation: str
 
 class LeadScoreRequest(BaseModel):
+    weights: dict[str, int] = Field(default_factory=dict)
+
+    @field_validator('weights')
+    @classmethod
+    def valid_weights(cls, value):
+        allowed = {'base', 'executive', 'management', 'company', 'enterprise', 'phone', 'corporateEmail', 'inbound'}
+        if any(key not in allowed or points < 0 or points > 100 for key, points in value.items()):
+            raise ValueError('Scoring weights must use supported factors and values from 0 to 100')
+        return value
+
     firstName: str | None = None
     lastName: str | None = None
     email: str

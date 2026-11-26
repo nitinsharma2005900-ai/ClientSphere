@@ -53,3 +53,11 @@ def test_batch_size_is_bounded():
 def test_invalid_utf8_csv_returns_a_safe_validation_error():
     response = client.post('/api/v1/leads/process-csv', files={'file': ('leads.csv', b'\xff\xfe', 'text/csv')})
     assert response.status_code == 422
+
+
+def test_configurable_explainable_scoring_weights():
+    response = client.post('/api/v1/leads/score', json={'email': 'person@gmail.com', 'jobTitle': 'CTO', 'weights': {'base': 0, 'executive': 10}})
+    assert response.status_code == 200
+    assert response.json()['score'] == 10
+    assert response.json()['factors'][0]['points'] == 10
+    assert client.post('/api/v1/leads/score', json={'email': 'a@gmail.com', 'weights': {'unknown': 5}}).status_code == 422

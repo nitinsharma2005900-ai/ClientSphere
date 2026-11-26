@@ -1,87 +1,10 @@
-# ClientSphere – Service & Data Flow Documentation
+# Data flow
 
-**Developer:** Nitin Sharma  
-**Version:** 1.0.0  
-
----
-
-## 1. End-to-End User Journeys & Data Flows
-
-### Data Flow 1: Inbound Lead Creation, Explainable Scoring & Conversion
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor MarketingUser as Marketing User / Webhook
-    participant NextUI as Next.js Frontend
-    participant ExpressAPI as Express REST Gateway
-    participant FastAPI as Python Intelligence Service
-    participant Database as PostgreSQL Database
-    participant Worker as BullMQ Automation Worker
-
-    MarketingUser->>NextUI: Submit Lead Form / Upload CSV
-    NextUI->>ExpressAPI: POST /api/v1/leads (with payload)
-    ExpressAPI->>FastAPI: POST /api/v1/leads/score (calculate factors)
-    FastAPI-->>ExpressAPI: Return Score (85), Tier (HOT), 4 Factors
-    ExpressAPI->>Database: INSERT into leads (score, priorityTier, factors)
-    Database-->>ExpressAPI: Saved Lead Record
-    ExpressAPI->>Worker: Dispatch Event: LEAD_CREATED
-    Worker->>Database: Query Workflows matching LEAD_CREATED & score >= 70
-    Worker->>Database: Execute Action: Send Welcome Sandbox Email & Log Activity
-    ExpressAPI-->>NextUI: 201 Created with Explainable Score Breakdown
-    NextUI-->>MarketingUser: Render Hot Lead Card with Factor Chips
-```
-
----
-
-### Data Flow 2: Capstone Challenge – Multi-Company Association & Team Deal Collaboration
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Rep as Sales Representative (David Kim)
-    participant NextUI as Next.js Frontend
-    participant ExpressAPI as Express REST Gateway
-    participant Database as PostgreSQL Database
-
-    Note over Rep,Database: Scenario: Associate Victoria Sterling with Novus AI while remaining CTO at Apex Cloud
-    Rep->>NextUI: Click "Associate Company" in Contact Profile
-    NextUI->>ExpressAPI: POST /api/v1/contacts/{id}/companies { companyId: novusId, jobTitle: "Board Advisor" }
-    ExpressAPI->>Database: Validate Contact & Company belong to user's Organization
-    ExpressAPI->>Database: INSERT into contact_companies (contactId, companyId, jobTitle, isPrimary: false)
-    Database-->>ExpressAPI: Record Created
-    ExpressAPI-->>NextUI: 201 Created
-
-    Note over Rep,Database: Scenario: Add Solution Architect Nitin Sharma to $185k Deal Team
-    Rep->>NextUI: Open Opportunity Details -> Click "Add Collaborator"
-    NextUI->>ExpressAPI: POST /api/v1/opportunities/{id}/members { userId, role: "SALES_ENGINEER", commissionShare: 0.20 }
-    ExpressAPI->>Database: INSERT into opportunity_members (opportunityId, userId, role, canEdit, commissionShare)
-    Database-->>ExpressAPI: Member Registered
-    ExpressAPI->>Database: INSERT into activities (subject: "Team Member Added to Deal")
-    ExpressAPI-->>NextUI: 201 Created
-    NextUI-->>Rep: Team Split Updated (60% AE, 20% Sponsor, 20% SE)
-```
-
----
-
-### Data Flow 3: Kanban Stage Transition, Win/Loss Audit & Workflow Trigger
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Manager as Sales Manager
-    participant NextUI as Next.js Kanban Board
-    participant ExpressAPI as Express REST Gateway
-    participant WorkflowEngine as Automation Engine
-    participant Database as PostgreSQL Database
-
-    Manager->>NextUI: Drag Opportunity from "Negotiation" to "Closed Won"
-    NextUI->>ExpressAPI: PATCH /api/v1/opportunities/{id}/stage { stageId: "stage-closed-won" }
-    ExpressAPI->>Database: Update Opportunity status = 'WON', probability = 1.0, actualCloseDate = NOW()
-    ExpressAPI->>Database: INSERT into activities (type: STAGE_CHANGE)
-    ExpressAPI->>WorkflowEngine: Evaluate Trigger: DEAL_STAGE_CHANGED (status == 'WON')
-    WorkflowEngine->>Database: Execute Action: Create Onboarding Task for Customer Success
-    Database-->>WorkflowEngine: Task Created
-    WorkflowEngine-->>ExpressAPI: Workflow Log Recorded
-    ExpressAPI-->>NextUI: 200 OK with Updated Stage & Confetti Micro-interaction
-```
+1. The user signs in explicitly. Password hashes remain in PostgreSQL; the API returns access and refresh credentials. Profile/role context is derived from the authenticated account. Account changes clear client query data.
+2. The frontend sends same-origin requests to its Next.js proxy, which forwards only approved headers and the body to the private Express API.
+3. Express verifies JWT, role, tenant, record sharing and referenced IDs, then validates the business payload with Zod. Prisma performs persistence and returns a consistent response with a request ID.
+4. Lead scoring/import validation and forecast calculations call FastAPI with bounded inputs and a timeout. Python returns calculations and validation reports, not authoritative records.
+5. A CRM event creates a durable execution row for matching active workflows. The worker transfers queued execution IDs to BullMQ; delayed jobs remain scheduled in Redis. Actions and completion are atomic PostgreSQL transactions.
+6. CSV imports parse quoted records, normalize email/phone, flag candidates and create only accepted rows. A job records counts and per-row errors. Duplicate requests cannot bypass the database email key.
+7. Forecast PDFs are generated by the API from the authenticated user's visible persisted deals and Python calculations; downloads pass through the same-origin proxy.
+8. Mutations and sensitive profile reads create tenant-scoped audit records. Operational checks and logs provide local runtime evidence. Cloud evidence is unavailable until Railway permits provisioning.
