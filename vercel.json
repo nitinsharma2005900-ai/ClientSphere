@@ -1,0 +1,43 @@
+{
+  "services": {
+    "frontend": {
+      "root": "apps/frontend",
+      "framework": "nextjs",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "backend",
+          "format": "url",
+          "env": "BACKEND_INTERNAL_URL"
+        }
+      ]
+    },
+    "backend": {
+      "root": "apps/backend",
+      "framework": "express",
+      "entrypoint": "src/app.ts",
+      "buildCommand": "cd ../.. && npm run build -w packages/shared-types && npm run db:generate && DATABASE_URL=\"$DATABASE_URL_UNPOOLED\" npm run db:migrate && npm run db:seed && npm run build -w apps/backend",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "python",
+          "format": "url",
+          "env": "PYTHON_SERVICE_URL"
+        }
+      ]
+    },
+    "python": {
+      "root": "apps/python_service",
+      "framework": "fastapi",
+      "entrypoint": "main:app"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "frontend"
+      }
+    }
+  ]
+}

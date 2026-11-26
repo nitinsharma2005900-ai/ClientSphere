@@ -1,0 +1,3 @@
+# Vercel multi-service deployment
+
+The existing Next.js proxy uses a private binding to Express; Express calls the private FastAPI service. The project requires DATABASE_URL, DATABASE_URL_UNPOOLED, REDIS_URL and independent JWT_SECRET, JWT_REFRESH_SECRET, WEBHOOK_SECRET. Build applies Prisma migrations and seeds the synthetic demo only when no organization exists. Do not attach a database containing real customer data to this demo deployment. The dedicated BullMQ worker still requires a continuously running service; do not claim delayed workflow execution on Vercel until that worker is separately verified. Docker and Railway configurations remain intact.

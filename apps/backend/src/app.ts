@@ -72,3 +72,6 @@ app.use((req, res) => res.status(404).json({ success: false, error: { code: 'NOT
 
 // Centralized error handling middleware
 app.use(errorHandler);
+
+// Vercel Express function entry point; Docker continues to use server.ts.
+export default app;
