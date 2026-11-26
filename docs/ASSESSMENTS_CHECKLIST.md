@@ -1,0 +1,24 @@
+# Assessment verification against project6.pdf
+
+These are implementation and evidence findings, not an awarded score. Final test totals and infrastructure status are in [VERIFICATION_RESULTS.md](VERIFICATION_RESULTS.md).
+
+| # | Brief objective | Reviewed implementation and evidence | Status |
+| --- | --- | --- | --- |
+| 01 | CRM frontend | Existing premium UI and animations retained; contact/deal/workflow creation, Kanban drag, explicit login, CSV reports and forecast PDF added. React component tests pass. Browser verification recorded separately. | Implemented; browser evidence pending |
+| 02 | CRM backend APIs | Express routes cover CRM resources, conversion, teams, associations, imports, workflow retry and analytics. Supertest success, validation, permission and failure checks run against PostgreSQL. | Verified locally |
+| 03 | CRM relational model | Prisma PostgreSQL model and two migrations; email uniqueness, foreign keys, custom JSON fields, audit history, financial check constraints and conversion row locks. Contact/company and deal/team relationships verified. | Verified locally |
+| 04 | CRM access control | Five role logins; tenant/reference validation; owner/shared record checks; read-only team membership; restricted writes; sensitive reads audited. Security tests verify cross-tenant and role denial. | Verified locally |
+| 05 | Python lead processing | FastAPI scoring, normalization, exact/fuzzy duplicate candidates, validation reports; CSV parser supports quoted fields. Correctness tests cover invalid email, bounded batches and duplicates; benchmark endpoint available. | Verified locally; sample benchmark captured separately |
+| 06 | FastAPI sales intelligence | Express sends persisted opportunity snapshots to FastAPI; reproducible velocity, current/future quarter forecast, empty and zero boundaries. Stage distribution is a snapshot, with historical conversion measurement explicitly unavailable. | Verified locally with documented analytics limits |
+| 07 | Workflow automation | Database outbox, BullMQ consumer, optional delay, three attempts with backoff, execution history, transactionally idempotent actions, recursion guard and manager-only recovery endpoint. Actual delayed consumer and rollback tests pass. | Verified locally |
+| 08 | External integrations | Email/calendar sandbox and telephony mock store real activity rows; exact webhook secret; normalized email and consent capture. No real provider delivery is claimed. | Sandbox scope verified locally |
+| 09 | Docker stack | UI, API, Python, worker, PostgreSQL and Redis definitions; persistent data, non-root app users, health checks and migration dependency. Image/runtime verification recorded separately. | Final container run pending |
+| 10 | Git collaboration | Authenticated private repository created; real reviewed changes committed in stages; CODEOWNERS corrected to the authenticated account; PR template retained. No invented collaborator approvals. | Push/history verification pending |
+| 11 | CI/CD | GitHub Actions provisions databases, runs Node/Python/React/browser tests, builds and audits dependencies. Separate container workflow and conditional CodeQL configuration. | Remote CI verification pending |
+| 12 | Test strategy | Vitest/Supertest with real PostgreSQL and Redis worker, pytest/HTTP API tests, React Testing Library, Playwright journeys. Dedicated test database guard prevents clearing application data. | Unit/API tests verified; final browser evidence pending |
+| 13 | API documentation | OpenAPI/Swagger path corrected; specifications expanded to registered routes; Postman defaults to local URL, webhook secret supplied as a variable; no fabricated production URL. | Reviewed; route checks included in final smoke test |
+| 14 | Production deployment | Railway project exists and per-service manifests/runbook are prepared. Railway refuses service provisioning because the account free-plan limit is exceeded. No cloud app, cloud database or HTTPS live URL exists. | BLOCKED by account capacity |
+| 15 | Incident simulation/RCA | Documented actual duplicate, ownership, automation, forecast and reporting issues. Regression suite tests the depth guard directly and concurrent conversion, rather than accepting a successful response as proof. | Verified local regression evidence |
+| Capstone | Multi-company contacts and multi-representative deals | Distinct company roles, transaction-protected commission allocation, owner/team read/write authorization, API tests and UI creation flows. | Verified locally |
+
+A final cloud deployment and production verification are required before claiming all 15 assessments completed. Private repository CodeQL is skipped unless GitHub Advanced Security is enabled. Email/calendar and telephony remain explicitly identified as sandbox/mock integrations, as permitted by the brief.

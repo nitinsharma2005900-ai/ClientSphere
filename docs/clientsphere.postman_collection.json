@@ -1,0 +1,363 @@
+{
+  "info": {
+    "_postman_id": "c1a2b3c4-d5e6-7890-abcd-ef1234567890",
+    "name": "ClientSphere Enterprise CRM API Collection",
+    "description": "CRM API examples. Local endpoints are configured by default; no Railway live URL is available until account capacity is enabled.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "leadId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contactId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "companyId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "opportunityId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "webhookSecret",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Auth - Login as Administrator",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var jsonData = pm.response.json();",
+              "if (jsonData.success && jsonData.data.tokens) {",
+              "    pm.collectionVariables.set('authToken', jsonData.data.tokens.accessToken);",
+              "}",
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Has Access Token', function () { pm.expect(jsonData.data.tokens.accessToken).to.be.a('string'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@clientsphere.io\",\n  \"password\": \"Password123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      }
+    },
+    {
+      "name": "02. Auth - Get Profile (Me)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "me"
+          ]
+        }
+      }
+    },
+    {
+      "name": "03. Leads - List Paginated Leads",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/leads?page=1&limit=10",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "leads"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "04. Leads - Create New Lead with Scoring",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var jsonData = pm.response.json();",
+              "if (jsonData.success && jsonData.data) {",
+              "    pm.collectionVariables.set('leadId', jsonData.data.id);",
+              "}",
+              "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Seraphina\",\n  \"lastName\": \"Vance\",\n  \"email\": \"s.vance@solardynamics.com\",\n  \"phone\": \"+1-415-555-0182\",\n  \"companyName\": \"Solar Dynamics Inc\",\n  \"jobTitle\": \"Chief Operating Officer\",\n  \"source\": \"INBOUND_FORM\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/leads",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "leads"
+          ]
+        }
+      }
+    },
+    {
+      "name": "05. Leads - Convert Lead to Opportunity (Assessment 01/02)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"dealTitle\": \"Solar Dynamics Enterprise Grid Modernization\",\n  \"dealValue\": 145000,\n  \"expectedCloseDays\": 45\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/leads/{{leadId}}/convert",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "leads",
+            "{{leadId}}",
+            "convert"
+          ]
+        }
+      }
+    },
+    {
+      "name": "06. Capstone - Associate Contact to Secondary Company",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"jobTitle\": \"Technical Advisor\",\n  \"department\": \"Advisory Board\",\n  \"isPrimary\": false\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/contacts/{{contactId}}/companies",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "contacts",
+            "{{contactId}}",
+            "companies"
+          ]
+        }
+      }
+    },
+    {
+      "name": "07. Capstone - Add Multi-Rep Collaborator to Opportunity",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"target-collaborator-user-id\",\n  \"role\": \"SALES_ENGINEER\",\n  \"canEdit\": true,\n  \"commissionShare\": 0.25\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/opportunities/{{opportunityId}}/members",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "opportunities",
+            "{{opportunityId}}",
+            "members"
+          ]
+        }
+      }
+    },
+    {
+      "name": "08. Workflow - Trigger Automation Rule Test (Assessment 07)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"entityType\": \"OPPORTUNITY\",\n  \"entityId\": \"{{opportunityId}}\",\n  \"entityData\": {\n    \"value\": 120000,\n    \"status\": \"OPEN\",\n    \"stage\": \"Negotiation\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/workflows/workflow-id/trigger",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "workflows",
+            "workflow-id",
+            "trigger"
+          ]
+        }
+      }
+    },
+    {
+      "name": "09. Integrations - Send Sandbox Email (Assessment 08)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"to\": \"v.sterling@apexcloud.io\",\n  \"subject\": \"ClientSphere Commercial Agreement Follow-up\",\n  \"body\": \"Hi Victoria, following up on our technical review of the multi-region cloud deployment architecture.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/integrations/sandbox/email",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "integrations",
+            "sandbox",
+            "email"
+          ]
+        }
+      }
+    },
+    {
+      "name": "10. Analytics - Get Sales Dashboard KPI & Velocity",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/analytics/dashboard",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "analytics",
+            "dashboard"
+          ]
+        }
+      }
+    }
+  ]
+}

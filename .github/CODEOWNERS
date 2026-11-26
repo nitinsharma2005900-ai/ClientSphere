@@ -1,0 +1,26 @@
+# CODEOWNERS for ClientSphere CRM
+# Enforce review requirements across core modules
+
+# Global default owner
+* @nitinsharma2005900-ai
+
+# Frontend Next.js application & UI components
+/apps/frontend/ @nitinsharma2005900-ai
+
+# Backend Express REST APIs & Authentication
+/apps/backend/ @nitinsharma2005900-ai
+
+# Database schemas & Prisma migrations
+/apps/backend/prisma/ @nitinsharma2005900-ai
+
+# Python Intelligence & Lead Processing (FastAPI)
+/apps/python_service/ @nitinsharma2005900-ai
+
+# Workflow Automation & BullMQ workers
+/apps/worker/ @nitinsharma2005900-ai
+/apps/backend/src/services/workflow/ @nitinsharma2005900-ai
+
+# DevOps, Docker, & CI/CD Pipelines
+/docker/ @nitinsharma2005900-ai
+/.github/ @nitinsharma2005900-ai
+docker-compose*.yml @nitinsharma2005900-ai

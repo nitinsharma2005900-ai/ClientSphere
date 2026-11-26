@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #FAF9F0;
+  --bg-secondary: #F4F1E4;
+  --bg-card: #FFFFFF;
+  --bg-hover: #EAE4CF;
+  --border: #E2DCBF;
+  --text-primary: #070C1B;
+  --text-secondary: #4A5568;
+  --text-muted: #718096;
+  --accent-violet: #7C3AED;
+  --accent-emerald: #10B981;
+  --accent-navy: #0B132B;
+}
+
+.dark {
+  --bg-primary: #070C1B;
+  --bg-secondary: #0B132B;
+  --bg-card: #111B38;
+  --bg-hover: #1C2B54;
+  --border: #233464;
+  --text-primary: #FAF9F0;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --accent-violet: #8B5CF6;
+  --accent-emerald: #34D399;
+  --accent-navy: #FAF9F0;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Custom premium scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.4);
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.dark .glass-panel {
+  background: rgba(17, 27, 56, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Shimmer pulse for skeleton loaders */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+.shimmer-loader {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer-loader::after {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmer 1.5s infinite;
+  content: '';
+}

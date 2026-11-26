@@ -1,0 +1,84 @@
+name: clientsphere
+x-app-env: &app-env
+  NODE_ENV: production
+  DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/clientsphere
+  REDIS_URL: redis://redis:6379
+  PYTHON_SERVICE_URL: http://python-service:8000
+  JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+  JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET}
+  WEBHOOK_SECRET: ${WEBHOOK_SECRET:?Set WEBHOOK_SECRET}
+  CORS_ORIGIN: http://localhost:${FRONTEND_PORT:-3000}
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: clientsphere
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d clientsphere"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes: ["redis_data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+  python-service:
+    build: {context: ., dockerfile: docker/Dockerfile.python}
+    environment: {PORT: 8000}
+    restart: unless-stopped
+  migrate:
+    image: clientsphere-backend:local
+    build: {context: ., dockerfile: docker/Dockerfile.backend}
+    environment: *app-env
+    command: ["npm", "run", "db:migrate"]
+    depends_on:
+      postgres: {condition: service_healthy}
+  backend:
+    image: clientsphere-backend:local
+    build: {context: ., dockerfile: docker/Dockerfile.backend}
+    environment:
+      <<: *app-env
+      PORT: 4000
+      SEED_DEMO: ${SEED_DEMO:-false}
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      redis: {condition: service_healthy}
+      python-service: {condition: service_healthy}
+    restart: unless-stopped
+  worker:
+    image: clientsphere-backend:local
+    environment:
+      <<: *app-env
+      PORT: 4001
+    command: ["node", "apps/backend/dist/worker.js"]
+    depends_on:
+      backend: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:4001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+  frontend:
+    build: {context: ., dockerfile: docker/Dockerfile.frontend}
+    environment:
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      BACKEND_INTERNAL_URL: http://backend:4000
+    ports: ["127.0.0.1:${FRONTEND_PORT:-3000}:3000"]
+    depends_on:
+      backend: {condition: service_healthy}
+    restart: unless-stopped
+volumes:
+  postgres_data:
+  redis_data:

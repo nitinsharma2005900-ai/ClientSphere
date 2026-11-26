@@ -1,0 +1,6 @@
+# Build the backend image once and reuse it as the worker image.
+# Compose uses Dockerfile.backend for both services; Railway does the same.
+FROM clientsphere-backend:local
+ENV PORT=4001
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD curl -fsS http://localhost:${PORT}/health || exit 1
+CMD ["node", "apps/backend/dist/worker.js"]

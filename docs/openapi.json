@@ -1,0 +1,2124 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ClientSphere Enterprise CRM & Workflow Automation API",
+    "description": "Comprehensive REST API specification for ClientSphere Enterprise CRM Platform, covering leads, multi-company contacts, collaborative opportunities, Kanban pipelines, activity timelines, workflow automation, and sandbox integrations.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Nitin Sharma",
+      "email": "nitin.sharma@clientsphere.io"
+    }
+  },
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "Current origin through the frontend proxy"
+    },
+    {
+      "url": "http://localhost:4000/api/v1",
+      "description": "Local API"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Enter your JWT Bearer token obtained from /auth/login"
+      },
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-KEY",
+        "description": "API Key for Webhook & Lead-Capture endpoints"
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "ADMINISTRATOR",
+              "SALES_MANAGER",
+              "SALES_REPRESENTATIVE",
+              "MARKETING_USER",
+              "SUPPORT_USER"
+            ]
+          },
+          "department": {
+            "type": "string"
+          },
+          "organizationId": {
+            "type": "string"
+          }
+        }
+      },
+      "Lead": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "companyName": {
+            "type": "string"
+          },
+          "jobTitle": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "CONTACTED",
+              "QUALIFIED",
+              "UNQUALIFIED",
+              "CONVERTED"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "WEBSITE",
+              "REFERRAL",
+              "COLD_OUTREACH",
+              "INBOUND_FORM",
+              "TRADE_SHOW",
+              "PARTNER",
+              "CSV_IMPORT"
+            ]
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "priorityTier": {
+            "type": "string",
+            "enum": [
+              "HOT",
+              "WARM",
+              "COLD"
+            ]
+          },
+          "ownerId": {
+            "type": "string"
+          }
+        }
+      },
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "gdprConsent": {
+            "type": "boolean"
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "companies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "companyId": {
+                  "type": "string"
+                },
+                "companyName": {
+                  "type": "string"
+                },
+                "jobTitle": {
+                  "type": "string"
+                },
+                "isPrimary": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Opportunity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          },
+          "stageId": {
+            "type": "string"
+          },
+          "probability": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "WON",
+              "LOST"
+            ]
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "teamMembers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "PRIMARY_OWNER",
+                    "SALES_ENGINEER",
+                    "ACCOUNT_EXECUTIVE",
+                    "CUSTOMER_SUCCESS",
+                    "EXECUTIVE_SPONSOR"
+                  ]
+                },
+                "commissionShare": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Authenticate user and issue JWT pair",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": "admin@clientsphere.io"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "Password123!"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful"
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Refresh access token using stored refresh token",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Token refreshed"
+          }
+        }
+      }
+    },
+    "/leads": {
+      "get": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "List paginated leads with filters",
+        "responses": {
+          "200": {
+            "description": "List of leads"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "Create a new lead with automatic explainable scoring",
+        "responses": {
+          "201": {
+            "description": "Lead created"
+          }
+        }
+      }
+    },
+    "/leads/{id}/convert": {
+      "post": {
+        "tags": [
+          "Leads"
+        ],
+        "summary": "Atomically convert lead to Contact, Company & Opportunity",
+        "responses": {
+          "200": {
+            "description": "Lead converted"
+          }
+        }
+      }
+    },
+    "/contacts": {
+      "get": {
+        "tags": [
+          "Contacts"
+        ],
+        "summary": "List contacts with primary company metadata",
+        "responses": {
+          "200": {
+            "description": "List of contacts"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Contacts"
+        ],
+        "summary": "Create contact",
+        "responses": {
+          "201": {
+            "description": "Contact created"
+          }
+        }
+      }
+    },
+    "/contacts/{id}/companies": {
+      "post": {
+        "tags": [
+          "Contacts (Capstone Challenge)"
+        ],
+        "summary": "Associate contact with an additional company",
+        "responses": {
+          "201": {
+            "description": "Company associated"
+          }
+        }
+      }
+    },
+    "/opportunities": {
+      "get": {
+        "tags": [
+          "Opportunities"
+        ],
+        "summary": "List opportunities filtered by stage, pipeline, and team visibility",
+        "responses": {
+          "200": {
+            "description": "List of opportunities"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Opportunities"
+        ],
+        "summary": "Create opportunity",
+        "responses": {
+          "201": {
+            "description": "Opportunity created"
+          }
+        }
+      }
+    },
+    "/opportunities/{id}/stage": {
+      "patch": {
+        "tags": [
+          "Opportunities"
+        ],
+        "summary": "Progress deal through Kanban pipeline stages with validation",
+        "responses": {
+          "200": {
+            "description": "Stage updated"
+          }
+        }
+      }
+    },
+    "/opportunities/{id}/members": {
+      "post": {
+        "tags": [
+          "Opportunities (Capstone Challenge)"
+        ],
+        "summary": "Add collaborative representative or engineer to deal team",
+        "responses": {
+          "201": {
+            "description": "Team member added"
+          }
+        }
+      }
+    },
+    "/workflows": {
+      "get": {
+        "tags": [
+          "Workflow Automation"
+        ],
+        "summary": "List active automation rules",
+        "responses": {
+          "200": {
+            "description": "List of workflows"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Workflow Automation"
+        ],
+        "summary": "Create configurable automation rule with triggers and actions",
+        "responses": {
+          "201": {
+            "description": "Workflow created"
+          }
+        }
+      }
+    },
+    "/integrations/sandbox/email": {
+      "post": {
+        "tags": [
+          "Integrations Sandbox"
+        ],
+        "summary": "Simulate sending email and log timeline thread",
+        "responses": {
+          "200": {
+            "description": "Email sent in sandbox"
+          }
+        }
+      }
+    },
+    "/integrations/lead-capture": {
+      "post": {
+        "tags": [
+          "Integrations Sandbox"
+        ],
+        "summary": "External web-to-lead webhook capture",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Lead captured via webhook"
+          }
+        }
+      }
+    },
+    "/analytics/dashboard": {
+      "get": {
+        "tags": [
+          "Sales Intelligence"
+        ],
+        "summary": "Get KPI counters, sales velocity, and pipeline conversion",
+        "responses": {
+          "200": {
+            "description": "Metrics response"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "GET /health",
+        "tags": [
+          "health"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "summary": "GET /ready",
+        "tags": [
+          "ready"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "POST /auth/logout",
+        "tags": [
+          "auth"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "GET /auth/me",
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "summary": "GET /users",
+        "tags": [
+          "users"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/leads/{id}": {
+      "get": {
+        "summary": "GET /leads/{id}",
+        "tags": [
+          "leads"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "summary": "PUT /leads/{id}",
+        "tags": [
+          "leads"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "summary": "DELETE /leads/{id}",
+        "tags": [
+          "leads"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/contacts/{id}": {
+      "get": {
+        "summary": "GET /contacts/{id}",
+        "tags": [
+          "contacts"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "summary": "PUT /contacts/{id}",
+        "tags": [
+          "contacts"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "summary": "DELETE /contacts/{id}",
+        "tags": [
+          "contacts"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/contacts/{id}/companies/{companyId}": {
+      "delete": {
+        "summary": "DELETE /contacts/{id}/companies/{companyId}",
+        "tags": [
+          "contacts"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/companies": {
+      "get": {
+        "summary": "GET /companies",
+        "tags": [
+          "companies"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      },
+      "post": {
+        "summary": "POST /companies",
+        "tags": [
+          "companies"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/companies/{id}": {
+      "get": {
+        "summary": "GET /companies/{id}",
+        "tags": [
+          "companies"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "summary": "PUT /companies/{id}",
+        "tags": [
+          "companies"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "summary": "DELETE /companies/{id}",
+        "tags": [
+          "companies"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/opportunities/{id}": {
+      "get": {
+        "summary": "GET /opportunities/{id}",
+        "tags": [
+          "opportunities"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "summary": "PUT /opportunities/{id}",
+        "tags": [
+          "opportunities"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "summary": "DELETE /opportunities/{id}",
+        "tags": [
+          "opportunities"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/opportunities/{id}/members/{userId}": {
+      "delete": {
+        "summary": "DELETE /opportunities/{id}/members/{userId}",
+        "tags": [
+          "opportunities"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/pipelines": {
+      "get": {
+        "summary": "GET /pipelines",
+        "tags": [
+          "pipelines"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      },
+      "post": {
+        "summary": "POST /pipelines",
+        "tags": [
+          "pipelines"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/pipelines/{id}": {
+      "get": {
+        "summary": "GET /pipelines/{id}",
+        "tags": [
+          "pipelines"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "summary": "PUT /pipelines/{id}",
+        "tags": [
+          "pipelines"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "summary": "DELETE /pipelines/{id}",
+        "tags": [
+          "pipelines"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/activities": {
+      "get": {
+        "summary": "GET /activities",
+        "tags": [
+          "activities"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      },
+      "post": {
+        "summary": "POST /activities",
+        "tags": [
+          "activities"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/activities/{id}": {
+      "delete": {
+        "summary": "DELETE /activities/{id}",
+        "tags": [
+          "activities"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/tasks": {
+      "get": {
+        "summary": "GET /tasks",
+        "tags": [
+          "tasks"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      },
+      "post": {
+        "summary": "POST /tasks",
+        "tags": [
+          "tasks"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/tasks/{id}": {
+      "put": {
+        "summary": "PUT /tasks/{id}",
+        "tags": [
+          "tasks"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "summary": "DELETE /tasks/{id}",
+        "tags": [
+          "tasks"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/workflows/executions": {
+      "get": {
+        "summary": "GET /workflows/executions",
+        "tags": [
+          "workflows"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/workflows/executions/{executionId}/retry": {
+      "post": {
+        "summary": "POST /workflows/executions/{executionId}/retry",
+        "tags": [
+          "workflows"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "executionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/workflows/{id}": {
+      "get": {
+        "summary": "GET /workflows/{id}",
+        "tags": [
+          "workflows"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "summary": "PUT /workflows/{id}",
+        "tags": [
+          "workflows"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "summary": "DELETE /workflows/{id}",
+        "tags": [
+          "workflows"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/workflows/{id}/trigger": {
+      "post": {
+        "summary": "POST /workflows/{id}/trigger",
+        "tags": [
+          "workflows"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/integrations/status": {
+      "get": {
+        "summary": "GET /integrations/status",
+        "tags": [
+          "integrations"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/integrations/sandbox/calendar": {
+      "post": {
+        "summary": "POST /integrations/sandbox/calendar",
+        "tags": [
+          "integrations"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/integrations/sandbox/telephony": {
+      "post": {
+        "summary": "POST /integrations/sandbox/telephony",
+        "tags": [
+          "integrations"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/imports/upload": {
+      "post": {
+        "summary": "POST /imports/upload",
+        "tags": [
+          "imports"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/imports/jobs": {
+      "get": {
+        "summary": "GET /imports/jobs",
+        "tags": [
+          "imports"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/analytics/forecast": {
+      "get": {
+        "summary": "GET /analytics/forecast",
+        "tags": [
+          "analytics"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/analytics/forecast/pdf": {
+      "get": {
+        "summary": "GET /analytics/forecast/pdf",
+        "tags": [
+          "analytics"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/audit-logs": {
+      "get": {
+        "summary": "GET /audit-logs",
+        "tags": [
+          "audit-logs"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Record not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    }
+  }
+}

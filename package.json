@@ -1,0 +1,33 @@
+{
+  "name": "clientsphere-enterprise-platform",
+  "version": "1.0.0",
+  "description": "ClientSphere \u00e2\u20ac\u201c Enterprise CRM, Sales Pipeline & Workflow Automation Platform",
+  "author": "Nitin Sharma",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=apps/backend",
+    "dev:frontend": "npm run dev --workspace=apps/frontend",
+    "dev:worker": "npm run dev --workspace=apps/worker",
+    "build": "npm run build -w packages/shared-types && npm run build -w apps/backend && npm run build -w apps/worker && npm run build -w apps/frontend",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "db:generate": "node --env-file-if-exists=.env node_modules/prisma/build/index.js generate --schema=apps/backend/prisma/schema.prisma",
+    "db:push": "npm run db:push --workspace=apps/backend",
+    "db:seed": "node --env-file-if-exists=.env node_modules/ts-node/dist/bin.js --project apps/backend/tsconfig.json apps/backend/src/db/run-seed.ts",
+    "db:migrate": "node --env-file-if-exists=.env node_modules/prisma/build/index.js migrate deploy --schema=apps/backend/prisma/schema.prisma",
+    "test:frontend": "vitest run --config apps/frontend/vitest.config.mts",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@testing-library/jest-dom": "^8.0.0",
+    "@testing-library/react": "^16.3.3",
+    "concurrently": "^9.1.0",
+    "jsdom": "^29.1.1",
+    "vitest": "^5.1.2"
+  }
+}
